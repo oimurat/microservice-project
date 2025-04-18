@@ -1,0 +1,191 @@
+version: '3.9'
+
+services:
+  # --------------------------
+  # graphql
+  # --------------------------
+  graphql-service:
+    build:
+      context: .
+      dockerfile: services/graphql-service/Dockerfile
+    container_name: graphql-service
+    ports:
+      - "8000:8000"
+    # volumes:
+      # - ./services/graphql-service/app:/app
+      # - graphql-data:/app/generated
+    restart: unless-stopped
+
+  # --------------------------
+  # 共通データベース（PostgreSQL for CRUD）
+  # --------------------------
+  microservice-db:
+    image: postgres:17.4
+    container_name: microservice-db
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppass
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - microservice-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # --------------------------
+  # MicroService
+  # --------------------------
+  grpc-cart-service:
+    build:
+      context: .
+      dockerfile: services/grpc-cart-service/Dockerfile
+    container_name: grpc-cart-service
+    ports:
+      - "50051:50051"
+    # volumes:
+      # - ./services/grpc-cart-service/app:/app
+      # - grpc-cart-data:/app/generated
+    restart: unless-stopped
+
+  grpc-product-service:
+    build:
+      context: .
+      dockerfile: services/grpc-product-service/Dockerfile
+    container_name: grpc-product-service
+    ports:
+      - "50052:50052"
+    # volumes:
+      # - ./services/grpc-product-service/app:/app
+      # - grpc-product-data:/app/generated
+    restart: unless-stopped
+
+  grpc-order-service:
+    build:
+      context: .
+      dockerfile: services/grpc-order-service/Dockerfile
+    container_name: grpc-order-service
+    ports:
+      - "50053:50053"
+    # volumes:
+      # - ./services/grpc-order-service/app:/app
+      # - grpc-order-data:/app/generated
+    restart: unless-stopped
+
+  grpc-payment-service:
+    build:
+      context: .
+      dockerfile: services/grpc-payment-service/Dockerfile
+    container_name: grpc-payment-service
+    ports:
+      - "50054:50054"
+    # volumes:
+      # - ./services/grpc-payment-service/app:/app
+      # - grpc-payment-data:/app/generated
+    restart: unless-stopped
+
+  # --------------------------
+  # Workflow Service（Temporal Worker + gRPC連携）
+  # --------------------------
+  workflow-service:
+    build:
+      context: .
+      dockerfile: services/workflow-service/Dockerfile
+    container_name: workflow-service
+    depends_on:
+      - temporal
+      - grpc-order-service
+      - grpc-payment-service
+    ports:
+      - "50060:50060"
+    # volumes:
+      # - ./services/workflow-service/app:/app
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    restart: unless-stopped
+
+  # --------------------------
+  # Temporal + PostgreSQL + UI
+  # --------------------------
+  temporal-db:
+    image: postgres:17.4
+    container_name: temporal-db
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal
+    volumes:
+      - temporal-pgdata:/var/lib/postgresql/data
+
+  temporal:
+    image: temporalio/auto-setup:1.27.2
+    container_name: temporal
+    ports:
+      - "7233:7233"
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: temporal
+      POSTGRES_SEEDS: temporal-db
+    depends_on:
+      - temporal-db
+    restart: unless-stopped
+
+  temporal-ui:
+    image: temporalio/ui:2.36.1
+    container_name: temporal-ui
+    ports:
+      - "8088:8080"
+    depends_on:
+      - temporal
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+
+  # --------------------------
+  # RabbitMQ + Management UI
+  # --------------------------
+  rabbitmq:
+    image: rabbitmq:4.1.0-beta.5-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: pass
+
+  # --------------------------
+  # Kafka + Zookeeper（開発用）
+  # 本番用はStrimzi Kafka Operatorを使う
+  # --------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.9.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.9.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+volumes:
+#   graphql-data:
+#   grpc-cart-data:
+#   grpc-user-data:
+#   grpc-order-data:
+#   grpc-payment-data:
+#   microservice-db-data:
+  microservice-db-data:
+  temporal-pgdata:

@@ -1,0 +1,25 @@
+type Product {
+  id: String
+  name: String
+  price: Float
+  description: String
+}
+
+type Cart {
+  id: String
+  productId: String
+  quantity: Int
+}
+
+type Query {
+  product(id: String!): Product
+  cart(id: String!): Cart
+}
+
+type Mutation {
+  createCart(id: String!, productId: String!, quantity: Int!): String
+  placeOrder(id: String!, itemId: String!, quantity: Int!): String
+  refundOrder(orderId: String!): String
+  payOrder(orderId: String!, amount: Int!): String
+  workflowOrder(orderId: String!, itemId: String!): String
+}
