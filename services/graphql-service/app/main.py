@@ -1,4 +1,7 @@
-import strawberry, resolvers, os
+import os
+
+import resolvers
+import strawberry
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -32,3 +35,8 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 async def graphql_ui():
     with open(os.path.join(static_dir, "graphql_ui.html")) as f:
         return f.read()
+
+# Ingress用に追加
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
