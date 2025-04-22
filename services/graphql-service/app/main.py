@@ -3,7 +3,7 @@ import os
 import resolvers
 import strawberry
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from strawberry.fastapi import GraphQLRouter
 from strawberry.schema.config import StrawberryConfig
@@ -35,8 +35,3 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 async def graphql_ui():
     with open(os.path.join(static_dir, "graphql_ui.html")) as f:
         return f.read()
-
-# Ingress用に追加
-@app.get("/healthz")
-async def healthz():
-    return JSONResponse(content={"status": "ok"}, status_code=200)
