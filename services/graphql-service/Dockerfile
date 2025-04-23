@@ -19,5 +19,5 @@ RUN python -m grpc_tools.protoc \
     /shared/proto/order.proto \
     /shared/proto/payment.proto
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--timeout-keep-alive", "10"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
