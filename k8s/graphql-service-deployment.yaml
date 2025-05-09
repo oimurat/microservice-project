@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: graphql-service
+  name: graphql-service
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: graphql-service
+  template:
+    metadata:
+      labels:
+        io.kompose.service: graphql-service
+    spec:
+      containers:
+        - image: nrt.ocir.io/nrcmxxv7sjse/ec_service_test:graphql-service
+          imagePullPolicy: Always
+          name: graphql-service
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+      restartPolicy: Always
