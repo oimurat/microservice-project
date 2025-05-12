@@ -20,6 +20,6 @@ spec:
           imagePullPolicy: Always
           name: graphql-service
           ports:
-            - containerPort: 8080
+            - containerPort: 80
               protocol: TCP
       restartPolicy: Always
